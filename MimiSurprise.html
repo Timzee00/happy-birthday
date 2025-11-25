@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Surprise — Happy Birthday</title>
+<style>
+  :root{
+    --bg:#fff6fb;
+    --accent:#ff2d99;
+    --accent-2:#ff8ac2;
+    --dark:#0b0b0d;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+  body{background:linear-gradient(180deg,#fff6fb 0%, #fff0f6 50%, #fffaf3 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--dark)}
+  /* envelope container */
+  .stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
+  .envelope-wrap{width:360px;max-width:90vw;height:260px;position:relative;perspective:1200px}
+  .envelope{width:100%;height:100%;position:relative;transform-origin:50% 0;transition:transform 900ms cubic-bezier(.2,.9,.2,1)}
+  .back{position:absolute;inset:0;background:linear-gradient(180deg,#ffe6f0,#ffd6ec);border-radius:12px;border:2px solid rgba(0,0,0,0.04);box-shadow:0 12px 40px rgba(8,6,10,0.12)}
+  .flap{position:absolute;left:0;right:0;top:0;height:60%;background:linear-gradient(180deg,#ff8ac2,#ff3d9f);clip-path:polygon(0 0,100% 0,50% 60%);border-top-left-radius:12px;border-top-right-radius:12px;transform-origin:50% 0;transition:transform 900ms cubic-bezier(.2,.9,.2,1)}
+  .card{position:absolute;left:12px;right:12px;bottom:22px;top:22px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);}
+  .open-btn{margin-top:12px;background:var(--accent);color:#fff;border:none;padding:12px 20px;border-radius:10px;font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(255,45,153,0.18)}
+  .open-btn:active{transform:translateY(1px)}
+  .title-small{font-size:14px;color:rgba(10,10,10,.6)}
+  .envelope.open .flap{transform:rotateX(180deg) translateY(-6px)}
+  .envelope.open{transform:translateY(-40px)}
+  /* dark screen after opening */
+  .dark-screen{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .6s;display:flex;align-items:center;justify-content:center;z-index:40}
+  .dark-screen.show{opacity:0.96;pointer-events:auto}
+  .light-btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:14px 26px;border-radius:12px;font-size:18px;cursor:pointer;box-shadow:0 12px 40px rgba(255,45,153,0.2)}
+  /* birthday page */
+  .party-page{position:fixed;inset:0;background:radial-gradient(circle at 10% 10%, #fff0f6 0%, #fff6fb 20%, #fffaf3 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:28px;z-index:50;opacity:0;pointer-events:none;transition:opacity .6s}
+  .party-page.show{opacity:1;pointer-events:auto}
+  .header{display:flex;align-items:center;gap:12px}
+  .name{font-size:34px;font-weight:800;color:var(--accent);letter-spacing:0.6px;text-shadow:0 6px 30px rgba(255,45,153,0.12)}
+  .sub{color:#6b6b78;margin-top:6px}
+  .stage-area{width:min(920px,94vw);height:min(520px,62vh);margin-top:18px;background:linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.7));border-radius:18px;border:1px solid rgba(0,0,0,0.04);box-shadow:0 20px 60px rgba(10,8,15,0.06);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:18px}
+  .slideshow{width:100%;height:100%;position:relative;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .slide{position:absolute;inset:0;background-size:cover;background-position:center center;opacity:0;transform:scale(1.04);transition:all 1.1s ease}
+  .slide.show{opacity:1;transform:scale(1)}
+  .controls{position:absolute;left:14px;bottom:16px;display:flex;gap:10px;align-items:center}
+  .gloo{background:rgba(255,255,255,0.9);padding:8px 12px;border-radius:999px;font-weight:700;color:var(--accent);box-shadow:0 6px 18px rgba(8,6,10,0.06)}
+  .play-btn{position:absolute;right:14px;bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  /* balloons */
+  .balloon{position:absolute;width:48px;height:64px;border-radius:40% 40% 50% 50%;opacity:0.98}
+  .balloon::after{content:"";position:absolute;left:50%;bottom:-22px;width:2px;height:22px;background:rgba(0,0,0,0.08);transform:translateX(-50%);border-radius:2px}
+  @keyframes floatUp{0%{transform:translateY(20vh) scale(.95)}50%{transform:translateY(-30vh) scale(1.02)}100%{transform:translateY(-110vh) scale(.98)}}
+  /* ribbons (falling confetti) */
+  .ribbon{position:absolute;width:10px;height:28px;background:linear-gradient(180deg,#ff6fa6,#ff2d99);opacity:0.95;transform-origin:center;animation:spin .9s linear infinite}
+  @keyframes spin{0%{transform:rotate(0deg)}50%{transform:rotate(90deg)}100%{transform:rotate(180deg)}}
+  /* confetti burst (quick) */
+  .confetti{position:absolute;width:8px;height:12px;border-radius:2px;opacity:0.98}
+  /* small decorations */
+  .decor-top{position:absolute;top:12px;left:12px;font-size:13px;color:rgba(10,10,10,0.5)}
+  .footer-note{position:fixed;bottom:8px;right:10px;color:rgba(11,11,11,0.45);font-size:12px}
+  /* responsive tweaks */
+  @media (max-width:520px){
+    .name{font-size:26px}
+    .stage-area{height:58vh;padding:12px}
+  }
+ .footer-class{
+    text-align: center;
+    border: dotted 2px black;
+    
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="envelope-wrap" id="envelopeWrap">
+    <div class="envelope" id="envelope">
+      <div class="back"></div>
+      <div class="flap"></div>
+      <div class="card">
+        <div style="text-align:center">
+          <div style="font-weight:800;font-size:20px;color:#ff3d9f">A Special Surprise</div>
+          <div class="title-small">Open this envelope for a birthday reveal</div>
+        </div>
+        <button class="open-btn" id="openBtn">Open</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dark-screen" id="darkScreen">
+  <button class="light-btn" id="lightBtn">TURN LIGHT ON</button>
+</div>
+
+<div class="party-page" id="partyPage">
+  <div class="header">
+    <div class="name" id="birthdayName">HAPPY BIRTHDAY, MIMI</div>
+  </div>
+  <div class="sub" id="wishText">Wishing you joy, laughter and unforgettable moments.</div>
+
+  <div class="stage-area" id="stageArea">
+    <div class="slideshow" id="slideshow">
+      <div class="slide show" style="background-image:url('pics1.jpg')" data-index="0"></div>
+      <div class="slide" style="background-image:url('pics2.jpg')" data-index="1"></div>
+      <div class="slide" style="background-image:url('pics3.jpg')" data-index="2"></div>
+      <div class="slide" style="background-image:url('pics4.jpg')" data-index="3"></div>
+    </div>
+
+    <div class="controls">
+      <div class="gloo" id="slideIndex">1 / 4</div>
+    </div>
+    <button class="play-btn" id="muteBtn">Play Music</button>
+  </div>
+  <div class="footer-note footer-class">Made with ❤ — Surprise<br><em>by timzee</em>
+  </div>
+</div>
+<div>
+</div>
+
+<audio id="bgAudio" loop src="song.mp3"></audio>
+
+<script>
+  const envelope = document.getElementById('envelope');
+  const openBtn = document.getElementById('openBtn');
+  const darkScreen = document.getElementById('darkScreen');
+  const lightBtn = document.getElementById('lightBtn');
+  const partyPage = document.getElementById('partyPage');
+  const audio = document.getElementById('bgAudio');
+  const muteBtn = document.getElementById('muteBtn');
+  const slideshow = document.getElementById('slideshow');
+  const slides = Array.from(slideshow.querySelectorAll('.slide'));
+  const slideIndexLabel = document.getElementById('slideIndex');
+  const birthdayName = document.getElementById('birthdayName');
+
+  let current = 0;
+  let slideInterval = null;
+  let balloonsLaunched = false;
+
+  function openEnvelope(){
+    envelope.classList.add('open');
+    setTimeout(()=>{ darkScreen.classList.add('show'); },900);
+  }
+  openBtn.addEventListener('click', openEnvelope);
+
+  function turnLightsOn(){
+    darkScreen.classList.remove('show');
+    setTimeout(()=>{ revealParty(); },250);
+  }
+  lightBtn.addEventListener('click',()=> {
+    turnLightsOn();
+    try{ audio.play(); muteBtn.textContent = 'Mute Music'; }catch(e){}
+  });
+
+  function revealParty(){
+    partyPage.classList.add('show');
+    startSlideshow();
+    launchBalloons();
+    burstRibbons();
+    setTimeout(()=>{ burstConfetti(36); },600);
+  }
+
+  function startSlideshow(){
+    slides.forEach((s,i)=> s.classList.toggle('show', i===0));
+    updateIndex();
+    slideInterval = setInterval(()=>{
+      slides[current].classList.remove('show');
+      current = (current+1) % slides.length;
+      slides[current].classList.add('show');
+      updateIndex();
+    },3200);
+  }
+  function updateIndex(){ slideIndexLabel.textContent = (current+1) + ' / ' + slides.length; }
+
+  muteBtn.addEventListener('click', ()=>{
+    if(audio.paused){ audio.play(); muteBtn.textContent = 'Mute Music'; } else { audio.pause(); muteBtn.textContent = 'Play Music'; }
+  });
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+
+  function launchBalloons(){
+    if(balloonsLaunched) return; balloonsLaunched = true;
+    const colors = ['#ff6fa6','#ffd966','#8be9ff','#c6ffb0','#ffb3b3','#c9b3ff'];
+    for(let i=0;i<10;i++){
+      const b = document.createElement('div');
+      b.className='balloon';
+      const w = rand(36,64);
+      b.style.width = w+'px'; b.style.height = (w*1.35)+'px';
+      b.style.left = (rand(6,92))+'%';
+      b.style.background = colors[i%colors.length];
+      b.style.bottom = '-20vh';
+      b.style.opacity = 0.98;
+      b.style.animation = `floatUp ${rand(6,12)}s linear ${rand(0,1.2)}s forwards`;
+      document.body.appendChild(b);
+      setTimeout(()=>{ b.remove(); },16000);
+    }
+  }
+
+  function burstRibbons(){
+    const area = document.getElementById('stageArea');
+    for(let i=0;i<24;i++){
+      const r = document.createElement('div');
+      r.className = 'ribbon';
+      r.style.left = rand(6,94)+'%';
+      r.style.top = rand(6,42)+'%';
+      r.style.background = `linear-gradient(180deg, hsl(${Math.floor(rand(320,350))}deg 95% 65%), hsl(${Math.floor(rand(300,340))}deg 85% 60%))`;
+      r.style.width = rand(6,12)+'px';
+      r.style.height = rand(18,36)+'px';
+      r.style.transform = `rotate(${rand(-50,50)}deg)`;
+      r.style.animationDuration = (rand(0.8,1.2))+'s';
+      document.body.appendChild(r);
+      setTimeout(()=> r.remove(),4000);
+    }
+  }
+
+  function burstConfetti(count){
+    const colors = ['#ff3d9f','#ffd966','#8be9ff','#c6ffb0','#ffb3b3','#c9b3ff','#6bffda'];
+    for(let i=0;i<count;i++){
+      const c = document.createElement('div');
+      c.className='confetti';
+      c.style.left = rand(10,90)+'%';
+      c.style.top = rand(10,40)+'%';
+      c.style.background = colors[i % colors.length];
+      c.style.transform = `rotate(${rand(0,360)}deg)`;
+      c.style.width = Math.floor(rand(6,12))+'px';
+      c.style.height = Math.floor(rand(8,18))+'px';
+      c.style.opacity = 0.95;
+      c.style.transition = 'transform 1.6s ease, top 1.6s ease, left 1.6s ease, opacity .9s';
+      document.body.appendChild(c);
+      setTimeout(()=>{ c.style.top = (rand(60,120))+'%'; c.style.transform = `rotate(${rand(200,1200)}deg)`; c.style.left = (rand(10,90))+'%'; c.style.opacity = 0.98; }, 40+i*10);
+      setTimeout(()=> c.remove(),2200 + i*20);
+    }
+  }
+
+  // accessibility: enable keyboard activation for open/light
+  openBtn.addEventListener('keyup', e=>{ if(e.key==='Enter') openEnvelope(); });
+  lightBtn.addEventListener('keyup', e=>{ if(e.key==='Enter') turnLightsOn(); });
+
+  // optional: allow user to replace name quickly by pressing N key (for local editing convenience)
+  document.addEventListener('keydown', e=>{
+    if(e.key==='N' || e.key==='n'){ const newName = prompt('Enter name to display:','[NAME]'); if(newName) birthdayName.textContent = 'HAPPY BIRTHDAY, ' + newName.toUpperCase(); }
+  });
+
+  // touch safety: if device is low-power block too many particles
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    // remove heavy animations
+    slides.forEach(s=> s.style.transition='none');
+  }
+
+  // prevent autoplay block: audio is triggered by click handlers above
+</script>
+</body>
+</html>
+```0
